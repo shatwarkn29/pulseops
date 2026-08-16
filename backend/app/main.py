@@ -1,14 +1,30 @@
 from fastapi import FastAPI
+from sqlalchemy import text 
+
+
+from app.core.settings import settings
+from app.db.database import engine
+
 
 app = FastAPI(
-    title="PulseOps API",
-    description="Entriprise Website Monitoring Platform",
-    version="1.0.0"
+    title=settings.APP_NAME,
+    version=settings.APP_VERSION,
 )
+
 
 @app.get("/")
 def root():
     return {
-        "application": "PulseOps API",
-        "status":"Running"
+        "application": settings.APP_NAME,
+        "version": settings.APP_VERSION,
+        "database_host": settings.DATABASE_HOST,
     }
+
+@app.get("/health/db")
+def database_health():
+    with engine.connect() as connection:
+        result = connection.execute(text("SELECT 1"))
+        return {
+            "database": "connected",
+            "result": result.scalar(),
+        }
