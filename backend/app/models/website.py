@@ -3,16 +3,24 @@ import uuid
 from typing import Optional
 from datetime import datetime, timezone
 
-from sqlalchemy import Integer, String, Boolean, Text, DateTime
+from sqlalchemy import Integer, String, Boolean, Text, DateTime, Index, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
-from typing import Optional
 
 from app.db.base import Base
 
 
 class Website(Base):
     __tablename__ = "website"
+
+    __table_args__ = (
+        Index(
+            "uq_website_url_active",
+            "url",
+            unique=True,
+            postgresql_where=text("deleted_at IS NULL"),
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -28,7 +36,6 @@ class Website(Base):
     url: Mapped[str] = mapped_column(
         Text,
         nullable=False,
-        unique=True,
     )
 
     monitoring_interval: Mapped[int] = mapped_column(
@@ -53,7 +60,6 @@ class Website(Base):
         DateTime(timezone=True),
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
     )
 
     deleted_at: Mapped[Optional[datetime]] = mapped_column(
