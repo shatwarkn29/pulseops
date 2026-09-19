@@ -6,7 +6,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
 from app.models.website import Website
-from app.schemas.website import WebsiteCreate, WebsiteUpdate    
+from app.schemas.website import WebsiteCreate, WebsiteUpdate   
+from app.services.scheduler_service import add_website_job , update_website_job , remove_website_job
 
 def create_website(db: Session, website_data: WebsiteCreate) -> Website:
 
@@ -46,7 +47,7 @@ def create_website(db: Session, website_data: WebsiteCreate) -> Website:
 
         db.commit()
         db.refresh(deleted_website)
-
+        add_website_job(deleted_website)
         return deleted_website
 
     # Create a completely new website
@@ -61,6 +62,7 @@ def create_website(db: Session, website_data: WebsiteCreate) -> Website:
     try:
         db.commit()
         db.refresh(db_website)
+        add_website_job(db_website)
     except IntegrityError as e:
         db.rollback()
         raise ValueError(
@@ -83,10 +85,12 @@ def update_website(db:Session , website:Website , website_data: WebsiteUpdate) -
         setattr(website,field,value)
     db.commit()
     db.refresh(website)
+    update_website_job(website)
     return website
 
 def delete_website(db:Session, website: Website) -> Website:
     website.deleted_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(website)
+    remove_website_job(str(website.id))
     return website 
