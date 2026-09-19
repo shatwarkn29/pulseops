@@ -3,3 +3,4 @@ from app.schemas.website import (
     WebsiteResponse,
     WebsiteUpdate,
 )
+from app.schemas.health_check import HealthCheckResponse
