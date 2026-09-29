@@ -2,16 +2,16 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine import URL
 from sqlalchemy.orm import sessionmaker, Session
 
-from app.core.settings import settings
+from app.core.settings import Settings
 
 
 DATABASE_URL = URL.create(
     drivername="postgresql+psycopg2",
-    username=settings.DATABASE_USER,
-    password=settings.DATABASE_PASSWORD,
-    host=settings.DATABASE_HOST,
-    port=settings.DATABASE_PORT,
-    database=settings.DATABASE_NAME,
+    username=Settings().DATABASE_USER,
+    password=Settings().DATABASE_PASSWORD,
+    host=Settings().DATABASE_HOST,
+    port=Settings().DATABASE_PORT,
+    database=Settings().DATABASE_NAME,
 )
 
 

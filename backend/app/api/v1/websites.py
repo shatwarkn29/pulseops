@@ -9,6 +9,7 @@ from app.schemas.website import WebsiteCreate , WebsiteUpdate, WebsiteResponse
 from app.schemas.health_check import HealthCheckResponse
 
 from app.services import website_service , health_check_service
+from app.schemas.analytics import WebsiteMetricsResponse
 
 
 router = APIRouter(prefix="/websites",tags=["websites"],)
@@ -75,3 +76,11 @@ def get_latest_health_check(website_id:UUID , db:Session = Depends(get_db)):
     if not latest_health_check:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No health checks found for this website")
     return latest_health_check
+
+@router.get("/{website_id}/metrics", response_model=WebsiteMetricsResponse)
+def get_website_metrics(website_id: UUID, hours: int = 24, db: Session = Depends(get_db)):
+    website = website_service.get_website(db, website_id=website_id)
+    if not website:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Website not found")
+    
+    return health_check_service.get_website_metrics(db, website_id, hours)

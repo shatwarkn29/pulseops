@@ -1,3 +1,5 @@
+import pika 
+import json
 import logging 
 from apscheduler.schedulers.background import BackgroundScheduler
 from sqlalchemy.orm import Session
@@ -11,16 +13,35 @@ logger = logging.getLogger(__name__)
 scheduler = BackgroundScheduler()
 
 def scheduled_health_check_job(website_id: str):
-    db: Session = SessionLocal()
+    # This below implementation is commented since we will be using RabbitMQ to send the health check job to worker service. The below implementation is kept for reference in case we want to use the scheduler to directly call the health check service in future.
+    # db: Session = SessionLocal()
+    # try:
+    #     website = db.query(Website).filter(Website.id == website_id).first()
+    #     if website and website.is_active and website.deleted_at is None:
+    #         logger.info("Performing scheduler health check for website: %s",website.url)
+    #         health_check_service.perform_health_check(db, website)
+    # except Exception as e:
+    #     logger.error("Error during scheduled health check for website_id %s: %s", website_id, str(e))
+    # finally:
+    #     db.close()
+
     try:
-        website = db.query(Website).filter(Website.id == website_id).first()
-        if website and website.is_active and website.deleted_at is None:
-            logger.info("Performing scheduler health check for website: %s",website.url)
-            health_check_service.perform_health_check(db, website)
+        connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+        channel = connection.channel()
+
+        channel.queue_declare(queue='health_check', durable=True)
+
+        message = json.dumps({"website_id":website_id})
+        channel.basic_publish(exchange='', routing_key='health_check' , body = message ,
+                              properties= pika.BasicProperties(
+                                  delivery_mode=2,
+                                )
+                            )
     except Exception as e:
-        logger.error("Error during scheduled health check for website_id %s: %s", website_id, str(e))
+        logger.error("Error publishing health check message for website_id %s: %s", website_id, str(e))
     finally:
-        db.close()
+        if 'connection' in locals():
+            connection.close()
 
 def start_scheduler():
     db: Session = SessionLocal()
